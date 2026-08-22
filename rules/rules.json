@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "rule_set_name": "CONFIGURE_OFFICIAL_RULE_SET",
+    "description": "Placeholder rule configuration. Replace rule_reference and explanation fields with official CMVR clauses before production use.",
+    "version": "0.1.0-demo"
+  },
+  "rules": {
+    "led_light_bar": {
+      "display_name": "LED Light Bar",
+      "rule_reference": "CONFIGURE_OFFICIAL_RULE (CMVR 100(2))",
+      "requirement": "Vehicle must not carry unauthorized auxiliary lighting exceeding configured lumen / mounting-position limits.",
+      "violation_explanation": "Unauthorized LED light bar detected. This modification may violate configured lighting regulations.",
+      "risk": "HIGH",
+      "penalty_placeholder": 91,
+      "score_penalty": 20
+    },
+    "oversized_wheel": {
+      "display_name": "Oversized Wheel",
+      "rule_reference": "CONFIGURE_OFFICIAL_RULE (CMVR 52)",
+      "requirement": "Wheel and tyre dimensions must remain within the configured factory / approved tolerance.",
+      "violation_explanation": "Wheel geometry exceeds the configured size threshold for this vehicle category.",
+      "risk": "HIGH",
+      "penalty_placeholder": 91,
+      "score_penalty": 20
+    },
+    "number_plate_missing": {
+      "display_name": "Number Plate Missing",
+      "rule_reference": "CONFIGURE_OFFICIAL_RULE (CMVR 50)",
+      "requirement": "Vehicle must display a valid, legible, correctly mounted registration plate at all times.",
+      "violation_explanation": "Number plate region appears empty, obscured, or missing entirely.",
+      "risk": "HIGH",
+      "penalty_placeholder": 96,
+      "score_penalty": 25
+    }
+  },
+  "risk_bands": [
+    { "min": 85, "max": 100, "label": "COMPLIANT", "color": "green" },
+    { "min": 70, "max": 84, "label": "LOW RISK", "color": "green" },
+    { "min": 50, "max": 69, "label": "MEDIUM RISK", "color": "yellow" },
+    { "min": 30, "max": 49, "label": "HIGH RISK", "color": "orange" },
+    { "min": 0, "max": 29, "label": "EXTREME RISK", "color": "red" }
+  ]
+}
