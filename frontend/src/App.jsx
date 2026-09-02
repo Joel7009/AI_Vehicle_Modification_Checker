@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   ScanSearch,
@@ -19,6 +19,8 @@ import {
   Cpu,
   Send,
 } from "lucide-react";
+
+import LandingPage from "./LandingPage";
 
 import {
   ResponsiveContainer,
@@ -293,37 +295,312 @@ function TopBar({ setMobileOpen }) {
 }
 
 function Dashboard() {
+  const [inspections, setInspections] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // ---------------------------------------------------------
+  // Fetch inspection data from backend / SQLite
+  // ---------------------------------------------------------
+
+  const fetchInspections = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/inspections"
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Backend returned ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(
+          "Failed to load inspection data."
+        );
+      }
+
+      setInspections(
+        Array.isArray(data.inspections)
+          ? data.inspections
+          : []
+      );
+    } catch (err) {
+      console.error(
+        "Dashboard fetch error:",
+        err
+      );
+
+      setError(
+        "Unable to load inspection data."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  // ---------------------------------------------------------
+  // Load data when Dashboard opens
+  // ---------------------------------------------------------
+
+  useEffect(() => {
+    fetchInspections();
+  }, []);
+
+
+  // ---------------------------------------------------------
+  // Statistics
+  // ---------------------------------------------------------
+
+  const totalInspections =
+    inspections.length;
+
+
+  const numberPlateDetections =
+    inspections.filter(
+      (inspection) =>
+        inspection.number_plate_detected === true
+    ).length;
+
+
+  const ledDetections =
+    inspections.filter(
+      (inspection) =>
+        inspection.led_detected === true
+    ).length;
+
+
+  const numberPlateRate =
+    totalInspections > 0
+      ? Math.round(
+          (numberPlateDetections /
+            totalInspections) *
+            100
+        )
+      : 0;
+
+
+  const ledDetectionRate =
+    totalInspections > 0
+      ? Math.round(
+          (ledDetections /
+            totalInspections) *
+            100
+        )
+      : 0;
+
+
+  // ---------------------------------------------------------
+  // Average number plate confidence
+  // ---------------------------------------------------------
+
+  const plateConfidenceValues =
+    inspections
+      .map(
+        (inspection) =>
+          inspection.number_plate_confidence
+      )
+      .filter(
+        (value) =>
+          typeof value === "number"
+      );
+
+
+  const averagePlateConfidence =
+    plateConfidenceValues.length > 0
+      ? (
+          plateConfidenceValues.reduce(
+            (sum, value) =>
+              sum + value,
+            0
+          ) /
+          plateConfidenceValues.length
+        ) * 100
+      : 0;
+
+
+  // ---------------------------------------------------------
+  // Average LED confidence
+  // ---------------------------------------------------------
+
+  const ledConfidenceValues =
+    inspections
+      .map(
+        (inspection) =>
+          inspection.led_confidence
+      )
+      .filter(
+        (value) =>
+          typeof value === "number"
+      );
+
+
+  const averageLedConfidence =
+    ledConfidenceValues.length > 0
+      ? (
+          ledConfidenceValues.reduce(
+            (sum, value) =>
+              sum + value,
+            0
+          ) /
+          ledConfidenceValues.length
+        ) * 100
+      : 0;
+
+
+  // ---------------------------------------------------------
+  // Dashboard stat cards
+  // ---------------------------------------------------------
+
   const stats = [
     {
       title: "Total Inspections",
-      value: "127",
-      change: "+18 this month",
+
+      value: loading
+        ? "..."
+        : String(totalInspections),
+
+      change:
+        totalInspections > 0
+          ? `${totalInspections} stored in database`
+          : "No inspections yet",
+
       color: "blue",
     },
+
     {
-      title: "Avg. Severity Score",
-      value: "42 / 100",
-      change: "Moderate Risk",
+      title: "Number Plates Detected",
+
+      value: loading
+        ? "..."
+        : String(numberPlateDetections),
+
+      change:
+        totalInspections > 0
+          ? `${numberPlateRate}% detection rate`
+          : "No inspection data",
+
       color: "violet",
     },
+
     {
-      title: "Compliance Rate",
-      value: "78%",
-      change: "Good Standing",
-      color: "green",
-    },
-    {
-      title: "Active Issues",
-      value: "23",
-      change: "Requires Attention",
+      title: "LED Detections",
+
+      value: loading
+        ? "..."
+        : String(ledDetections),
+
+      change:
+        totalInspections > 0
+          ? `${ledDetectionRate}% detection rate`
+          : "No inspection data",
+
       color: "orange",
+    },
+
+    {
+      title: "Avg. Confidence",
+
+      value: loading
+        ? "..."
+        : `${averagePlateConfidence.toFixed(1)}%`,
+
+      change:
+        totalInspections > 0
+          ? `LED avg ${averageLedConfidence.toFixed(1)}%`
+          : "No confidence data",
+
+      color: "green",
     },
   ];
 
+
+  // ---------------------------------------------------------
+  // Format date
+  // ---------------------------------------------------------
+
+  const formatDate = (dateString) => {
+    if (!dateString) {
+      return "—";
+    }
+
+    const date = new Date(
+      dateString
+    );
+
+    if (Number.isNaN(date.getTime())) {
+      return "—";
+    }
+
+    return date.toLocaleString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
+  };
+
+
+  // ---------------------------------------------------------
+  // Inspection status
+  // ---------------------------------------------------------
+
+  const getInspectionStatus = (
+    inspection
+  ) => {
+    if (
+      inspection.led_detected &&
+      inspection.number_plate_detected
+    ) {
+      return {
+        label: "Needs Verification",
+        className: "text-orange-400",
+        dot: "bg-orange-400",
+      };
+    }
+
+    if (
+      inspection.number_plate_detected
+    ) {
+      return {
+        label: "Plate Detected",
+        className: "text-emerald-400",
+        dot: "bg-emerald-400",
+      };
+    }
+
+    return {
+      label: "Review Required",
+      className: "text-slate-400",
+      dot: "bg-slate-500",
+    };
+  };
+
+
+  // =========================================================
+  // UI
+  // =========================================================
+
   return (
     <div className="space-y-6">
-      {/* Page heading */}
+
+      {/* ==================================================
+          PAGE HEADING
+      ================================================== */}
+
       <div>
+
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">
           Overview
         </p>
@@ -335,101 +612,506 @@ function Dashboard() {
         <p className="mt-1 text-sm text-slate-500">
           Monitor AI-powered vehicle inspections, modifications and compliance.
         </p>
+
       </div>
 
-      {/* Stats */}
+
+      {/* ==================================================
+          ERROR
+      ================================================== */}
+
+      {error && (
+
+        <div className="flex items-center justify-between rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3">
+
+          <p className="text-xs text-red-400">
+            {error}
+          </p>
+
+          <button
+            onClick={fetchInspections}
+            className="text-xs font-semibold text-cyan-400 hover:text-cyan-300"
+          >
+            Retry
+          </button>
+
+        </div>
+
+      )}
+
+
+      {/* ==================================================
+          STATS
+      ================================================== */}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
         {stats.map((stat) => (
-          <StatCard key={stat.title} {...stat} />
+          <StatCard
+            key={stat.title}
+            {...stat}
+          />
         ))}
+
       </div>
 
-      {/* Main dashboard cards */}
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.7fr_1fr]">
-        <DashboardPanel title="Inspection Overview">
-          <div className="flex h-[300px] items-center justify-center rounded-xl border border-dashed border-slate-800 bg-slate-950/30">
-            <div className="text-center">
-              <Activity className="mx-auto h-10 w-10 text-cyan-400/50" />
-              <p className="mt-3 text-sm font-medium text-slate-400">
-                Inspection analytics
-              </p>
-              <p className="mt-1 text-xs text-slate-600">
-                Recharts visualization will be connected here.
-              </p>
-            </div>
-          </div>
-        </DashboardPanel>
 
-        <DashboardPanel title="Severity Distribution">
-          <div className="flex h-[300px] items-center justify-center rounded-xl border border-dashed border-slate-800 bg-slate-950/30">
-            <div className="text-center">
-              <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full border-[18px] border-slate-800">
-                <span className="text-2xl font-bold text-white">127</span>
+      {/* ==================================================
+          MAIN DASHBOARD
+      ================================================== */}
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.7fr_1fr]">
+
+
+        {/* ==================================================
+            INSPECTION OVERVIEW
+        ================================================== */}
+
+        <DashboardPanel title="Inspection Overview">
+
+          <div className="h-[300px] rounded-xl border border-slate-800 bg-slate-950/30 p-5">
+
+            {loading ? (
+
+              <div className="flex h-full items-center justify-center">
+
+                <div className="text-center">
+
+                  <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-cyan-400" />
+
+                  <p className="mt-3 text-xs text-slate-500">
+                    Loading inspection data...
+                  </p>
+
+                </div>
+
               </div>
 
-              <p className="mt-4 text-sm text-slate-400">
-                Total inspections
-              </p>
-            </div>
+            ) : totalInspections === 0 ? (
+
+              <div className="flex h-full items-center justify-center">
+
+                <div className="text-center">
+
+                  <Activity className="mx-auto h-10 w-10 text-cyan-400/50" />
+
+                  <p className="mt-3 text-sm font-medium text-slate-400">
+                    No inspections yet
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-600">
+                    Run an AI inspection to populate this dashboard.
+                  </p>
+
+                </div>
+
+              </div>
+
+            ) : (
+
+              <div className="flex h-full flex-col justify-center">
+
+                <div className="mb-6">
+
+                  <p className="text-xs uppercase tracking-wider text-slate-500">
+                    Stored AI inspections
+                  </p>
+
+                  <p className="mt-1 text-4xl font-bold text-white">
+                    {totalInspections}
+                  </p>
+
+                </div>
+
+
+                {/* Number plate detection */}
+
+                <div className="mb-5">
+
+                  <div className="mb-2 flex items-center justify-between">
+
+                    <span className="text-xs text-slate-400">
+                      Number Plate Detection
+                    </span>
+
+                    <span className="text-xs font-semibold text-cyan-400">
+                      {numberPlateDetections} / {totalInspections}
+                    </span>
+
+                  </div>
+
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+
+                    <div
+                      className="h-full rounded-full bg-cyan-400 transition-all"
+                      style={{
+                        width: `${numberPlateRate}%`,
+                      }}
+                    />
+
+                  </div>
+
+                </div>
+
+
+                {/* LED detection */}
+
+                <div>
+
+                  <div className="mb-2 flex items-center justify-between">
+
+                    <span className="text-xs text-slate-400">
+                      LED Light Detection
+                    </span>
+
+                    <span className="text-xs font-semibold text-orange-400">
+                      {ledDetections} / {totalInspections}
+                    </span>
+
+                  </div>
+
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+
+                    <div
+                      className="h-full rounded-full bg-orange-400 transition-all"
+                      style={{
+                        width: `${ledDetectionRate}%`,
+                      }}
+                    />
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            )}
+
           </div>
+
         </DashboardPanel>
+
+
+        {/* ==================================================
+            DETECTION SUMMARY
+        ================================================== */}
+
+        <DashboardPanel title="Detection Summary">
+
+          <div className="flex h-[300px] flex-col justify-center">
+
+            {loading ? (
+
+              <div className="flex items-center justify-center">
+
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-cyan-400" />
+
+              </div>
+
+            ) : (
+
+              <div className="space-y-5">
+
+                <div className="flex items-center justify-between">
+
+                  <div>
+
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                      Number Plates
+                    </p>
+
+                    <p className="mt-1 text-2xl font-bold text-cyan-400">
+                      {numberPlateDetections}
+                    </p>
+
+                  </div>
+
+                  <div className="text-right">
+
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                      Detection Rate
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-white">
+                      {numberPlateRate}%
+                    </p>
+
+                  </div>
+
+                </div>
+
+
+                <div className="h-px bg-slate-800" />
+
+
+                <div className="flex items-center justify-between">
+
+                  <div>
+
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                      LED Lights
+                    </p>
+
+                    <p className="mt-1 text-2xl font-bold text-orange-400">
+                      {ledDetections}
+                    </p>
+
+                  </div>
+
+                  <div className="text-right">
+
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                      Detection Rate
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-white">
+                      {ledDetectionRate}%
+                    </p>
+
+                  </div>
+
+                </div>
+
+
+                <div className="h-px bg-slate-800" />
+
+
+                <div>
+
+                  <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                    Average Plate Confidence
+                  </p>
+
+                  <p className="mt-1 text-2xl font-bold text-violet-400">
+                    {averagePlateConfidence.toFixed(1)}%
+                  </p>
+
+                </div>
+
+              </div>
+
+            )}
+
+          </div>
+
+        </DashboardPanel>
+
       </div>
 
-      {/* Recent inspections */}
+
+      {/* ==================================================
+          RECENT INSPECTIONS
+      ================================================== */}
+
       <DashboardPanel title="Recent Inspections">
+
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[650px] text-left">
+
+          <table className="w-full min-w-[750px] text-left">
+
             <thead>
+
               <tr className="border-b border-slate-800 text-[10px] uppercase tracking-wider text-slate-500">
-                <th className="px-4 py-3">Inspection ID</th>
-                <th className="px-4 py-3">Vehicle</th>
-                <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3">Severity</th>
-                <th className="px-4 py-3">Status</th>
+
+                <th className="px-4 py-3">
+                  Inspection ID
+                </th>
+
+                <th className="px-4 py-3">
+                  Image
+                </th>
+
+                <th className="px-4 py-3">
+                  Date
+                </th>
+
+                <th className="px-4 py-3">
+                  Number Plate
+                </th>
+
+                <th className="px-4 py-3">
+                  LED
+                </th>
+
+                <th className="px-4 py-3">
+                  Status
+                </th>
+
               </tr>
+
             </thead>
 
+
             <tbody>
-              {[
-                ["INS-2025-00567", "Toyota Fortuner", "May 31, 2025", "42", "Needs Verification"],
-                ["INS-2025-00566", "Hyundai Creta", "May 31, 2025", "18", "Compliant"],
-                ["INS-2025-00565", "Royal Enfield Classic 350", "May 30, 2025", "67", "Potential Issue"],
-                ["INS-2025-00564", "Tata Ace", "May 30, 2025", "12", "Compliant"],
-              ].map(([id, vehicle, date, severity, status]) => (
-                <tr
-                  key={id}
-                  className="border-b border-slate-900 transition hover:bg-white/[0.02]"
-                >
-                  <td className="px-4 py-4 text-xs font-medium text-slate-300">
-                    {id}
+
+              {loading ? (
+
+                <tr>
+
+                  <td
+                    colSpan="6"
+                    className="px-4 py-10 text-center text-xs text-slate-500"
+                  >
+                    Loading inspections...
                   </td>
 
-                  <td className="px-4 py-4 text-xs text-white">
-                    {vehicle}
-                  </td>
-
-                  <td className="px-4 py-4 text-xs text-slate-500">
-                    {date}
-                  </td>
-
-                  <td className="px-4 py-4">
-                    <span className="rounded-md bg-orange-500/10 px-2 py-1 text-[10px] font-bold text-orange-400">
-                      {severity}/100
-                    </span>
-                  </td>
-
-                  <td className="px-4 py-4">
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-emerald-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                      {status}
-                    </span>
-                  </td>
                 </tr>
-              ))}
+
+              ) : inspections.length === 0 ? (
+
+                <tr>
+
+                  <td
+                    colSpan="6"
+                    className="px-4 py-10 text-center text-xs text-slate-600"
+                  >
+                    No inspections stored yet.
+                  </td>
+
+                </tr>
+
+              ) : (
+
+                inspections
+                  .slice(0, 10)
+                  .map((inspection) => {
+
+                    const status =
+                      getInspectionStatus(
+                        inspection
+                      );
+
+                    return (
+
+                      <tr
+                        key={inspection.id}
+                        className="border-b border-slate-900 transition hover:bg-white/[0.02]"
+                      >
+
+                        <td className="px-4 py-4 text-xs font-medium text-slate-300">
+
+                          INS-
+                          {String(
+                            inspection.id
+                          ).padStart(
+                            5,
+                            "0"
+                          )}
+
+                        </td>
+
+
+                        <td className="px-4 py-4 text-xs text-slate-400">
+
+                          {inspection.filename
+                            ? inspection.filename.slice(
+                                0,
+                                18
+                              ) + "..."
+                            : "—"}
+
+                        </td>
+
+
+                        <td className="px-4 py-4 text-xs text-slate-500">
+
+                          {formatDate(
+                            inspection.created_at
+                          )}
+
+                        </td>
+
+
+                        <td className="px-4 py-4">
+
+                          {inspection.number_plate_detected ? (
+
+                            <span className="rounded-md bg-cyan-500/10 px-2 py-1 text-[10px] font-bold text-cyan-400">
+                              Detected
+                            </span>
+
+                          ) : (
+
+                            <span className="rounded-md bg-slate-800 px-2 py-1 text-[10px] font-medium text-slate-500">
+                              Not Detected
+                            </span>
+
+                          )}
+
+                        </td>
+
+
+                        <td className="px-4 py-4">
+
+                          {inspection.led_detected ? (
+
+                            <span className="rounded-md bg-orange-500/10 px-2 py-1 text-[10px] font-bold text-orange-400">
+                              Detected
+                            </span>
+
+                          ) : (
+
+                            <span className="rounded-md bg-slate-800 px-2 py-1 text-[10px] font-medium text-slate-500">
+                              Not Detected
+                            </span>
+
+                          )}
+
+                        </td>
+
+
+                        <td className="px-4 py-4">
+
+                          <span
+                            className={`inline-flex items-center gap-1.5 text-[10px] font-medium ${status.className}`}
+                          >
+
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${status.dot}`}
+                            />
+
+                            {status.label}
+
+                          </span>
+
+                        </td>
+
+                      </tr>
+
+                    );
+                  })
+
+              )}
+
             </tbody>
+
           </table>
+
         </div>
+
       </DashboardPanel>
+
+
+      {/* ==================================================
+          REFRESH BUTTON
+      ================================================== */}
+
+      <div className="flex justify-end">
+
+        <button
+          onClick={fetchInspections}
+          disabled={loading}
+          className="rounded-lg border border-slate-800 bg-slate-950/50 px-4 py-2 text-xs font-semibold text-slate-400 transition hover:border-slate-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+
+          {loading
+            ? "Refreshing..."
+            : "Refresh Dashboard"}
+
+        </button>
+
+      </div>
+
     </div>
   );
 }
@@ -699,7 +1381,6 @@ function AIInspection() {
 
     if (!file) return;
 
-    // Validate image type
     const allowedTypes = [
       "image/jpeg",
       "image/png",
@@ -754,6 +1435,8 @@ function AIInspection() {
         );
       }
 
+      console.log("FULL INSPECTION RESULT:", data);
+
       setResult(data.result);
 
     } catch (err) {
@@ -769,11 +1452,41 @@ function AIInspection() {
     }
   };
 
+  // ---------------------------------------------------------
+  // NUMBER PLATE RESULT
+  // ---------------------------------------------------------
+
+  const numberPlate = result?.number_plate;
+
+  const bestPlate = numberPlate?.best_detection;
+// ---------------------------------------------------------
+// LED RESULT
+// ---------------------------------------------------------
+
+const ledPredictions =
+  result?.led_light?.[0]?.predictions?.predictions || [];
+
+const bestLed =
+  ledPredictions.length > 0
+    ? ledPredictions.reduce((best, current) =>
+        Number(current?.confidence || 0) >
+        Number(best?.confidence || 0)
+          ? current
+          : best
+      )
+    : null;
+
+// Only consider LED detected if confidence is 70% or higher
+const LED_CONFIDENCE_THRESHOLD = 0.70;
+
+const ledDetected =
+  bestLed &&
+  Number(bestLed.confidence || 0) >= LED_CONFIDENCE_THRESHOLD;
   return (
     <div className="space-y-6">
 
       {/* -------------------------------------------------- */}
-      {/* Header */}
+      {/* HEADER */}
       {/* -------------------------------------------------- */}
 
       <div>
@@ -786,25 +1499,25 @@ function AIInspection() {
         </h1>
 
         <p className="mt-1 text-sm text-slate-500">
-          Upload a vehicle image to detect its number plate using AI.
+          Detect number plates and LED lights using AI.
         </p>
       </div>
 
 
       {/* -------------------------------------------------- */}
-      {/* Main area */}
+      {/* MAIN */}
       {/* -------------------------------------------------- */}
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.5fr_1fr]">
 
-
         {/* ==================================================
-            LEFT SIDE — UPLOAD / PREVIEW
+            LEFT — IMAGE
         ================================================== */}
 
         <section className="rounded-2xl border border-slate-800 bg-[#0a111d]/80 p-5">
 
           <div className="mb-4">
+
             <h2 className="text-sm font-semibold text-white">
               Vehicle Image
             </h2>
@@ -812,13 +1525,13 @@ function AIInspection() {
             <p className="mt-1 text-xs text-slate-500">
               JPG, PNG or WEBP
             </p>
+
           </div>
 
 
-          {/* Upload */}
           {!preview ? (
 
-            <label className="flex min-h-[400px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-950/40 transition hover:border-cyan-400/50 hover:bg-cyan-400/[0.03]">
+            <label className="flex min-h-[400px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-950/40 transition hover:border-cyan-400/50">
 
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10">
 
@@ -826,21 +1539,17 @@ function AIInspection() {
 
               </div>
 
-
               <h3 className="mt-5 text-sm font-semibold text-white">
                 Upload Vehicle Image
               </h3>
-
 
               <p className="mt-2 text-xs text-slate-500">
                 Select a clear image of the vehicle
               </p>
 
-
               <span className="mt-5 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-xs font-medium text-slate-300">
                 Choose Image
               </span>
-
 
               <input
                 type="file"
@@ -853,7 +1562,6 @@ function AIInspection() {
 
           ) : (
 
-            /* Preview */
             <div>
 
               <div className="overflow-hidden rounded-2xl border border-slate-800 bg-black">
@@ -866,13 +1574,9 @@ function AIInspection() {
 
               </div>
 
-
               <div className="mt-4 flex flex-wrap gap-3">
 
-
-                {/* Change image */}
-
-                <label className="cursor-pointer rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-xs font-medium text-slate-300 transition hover:border-cyan-400/40 hover:text-white">
+                <label className="cursor-pointer rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-xs font-medium text-slate-300">
 
                   Change Image
 
@@ -886,12 +1590,10 @@ function AIInspection() {
                 </label>
 
 
-                {/* Analyze */}
-
                 <button
                   onClick={analyzeVehicle}
                   disabled={loading}
-                  className="flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-2.5 text-xs font-bold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-2.5 text-xs font-bold text-slate-950 hover:bg-cyan-300 disabled:opacity-50"
                 >
 
                   <ScanSearch className="h-4 w-4" />
@@ -911,15 +1613,11 @@ function AIInspection() {
         </section>
 
 
-
         {/* ==================================================
-            RIGHT SIDE — RESULTS
+            RIGHT — RESULTS
         ================================================== */}
 
         <section className="rounded-2xl border border-slate-800 bg-[#0a111d]/80 p-5">
-
-
-          {/* Result header */}
 
           <div className="mb-5">
 
@@ -928,16 +1626,13 @@ function AIInspection() {
             </h2>
 
             <p className="mt-1 text-xs text-slate-500">
-              Number plate detection
+              Number plate + LED light detection
             </p>
 
           </div>
 
 
-
-          {/* ==================================================
-              WAITING
-          ================================================== */}
+          {/* WAITING */}
 
           {!result && !error && !loading && (
 
@@ -962,10 +1657,7 @@ function AIInspection() {
           )}
 
 
-
-          {/* ==================================================
-              LOADING
-          ================================================== */}
+          {/* LOADING */}
 
           {loading && (
 
@@ -976,11 +1668,7 @@ function AIInspection() {
                 <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-slate-700 border-t-cyan-400" />
 
                 <p className="mt-4 text-sm text-slate-400">
-                  YOLO + OCR are analyzing the vehicle...
-                </p>
-
-                <p className="mt-1 text-xs text-slate-600">
-                  Detecting number plate and reading characters.
+                  AI is analyzing the vehicle...
                 </p>
 
               </div>
@@ -990,10 +1678,7 @@ function AIInspection() {
           )}
 
 
-
-          {/* ==================================================
-              ERROR
-          ================================================== */}
+          {/* ERROR */}
 
           {error && (
 
@@ -1012,21 +1697,191 @@ function AIInspection() {
           )}
 
 
-
-          {/* ==================================================
-              RESULTS
-          ================================================== */}
+          {/* RESULTS */}
 
           {result && (
 
             <div className="space-y-4">
 
 
-              {/* ----------------------------------------------
-                  ANNOTATED IMAGE
-              ---------------------------------------------- */}
+              {/* ==================================================
+                  NUMBER PLATE STATUS
+              ================================================== */}
 
-              {result.annotated_image && (
+              {numberPlate && (
+
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+
+                  <div className="flex items-center justify-between">
+
+                    <div>
+
+                      <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                        Number Plate Detection
+                      </p>
+
+                      <p className="mt-1 text-lg font-bold text-emerald-400">
+                        {numberPlate.status}
+                      </p>
+
+                    </div>
+
+                    <ShieldCheck className="h-8 w-8 text-emerald-400" />
+
+                  </div>
+
+                </div>
+
+              )}
+
+
+              {/* ==================================================
+                  NUMBER PLATE DETAILS
+              ================================================== */}
+
+              {bestPlate && (
+
+                <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+
+                  <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                    Detected Number Plate
+                  </p>
+
+                  {bestPlate.plate_number ? (
+
+                    <p className="mt-2 text-2xl font-bold tracking-[0.18em] text-cyan-300">
+                      {bestPlate.plate_number}
+                    </p>
+
+                  ) : (
+
+                    <p className="mt-2 text-sm font-semibold text-orange-400">
+                      Plate detected — characters not readable
+                    </p>
+
+                  )}
+
+
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+
+                    <div>
+
+                      <p className="text-[10px] text-slate-600">
+                        YOLO Confidence
+                      </p>
+
+                      <p className="mt-1 text-sm font-semibold text-cyan-400">
+                        {(Number(bestPlate.confidence || 0) * 100).toFixed(1)}%
+                      </p>
+
+                    </div>
+
+
+                    <div>
+
+                      <p className="text-[10px] text-slate-600">
+                        OCR Confidence
+                      </p>
+
+                      <p className="mt-1 text-sm font-semibold text-violet-400">
+                        {(Number(bestPlate.ocr_confidence || 0) * 100).toFixed(1)}%
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              )}
+
+
+              {/* ==================================================
+                  LED LIGHT DETECTION
+              ================================================== */}
+
+              <div
+                className={`rounded-xl border p-4 ${
+                  ledDetected
+                    ? "border-orange-500/20 bg-orange-500/5"
+                    : "border-slate-800 bg-slate-950/40"
+                }`}
+              >
+
+                <div className="flex items-center justify-between">
+
+                  <div>
+
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                      LED Bar Light Detection
+                    </p>
+
+                    <p
+                      className={`mt-1 text-lg font-bold ${
+                        ledDetected
+                          ? "text-orange-400"
+                          : "text-slate-400"
+                      }`}
+                    >
+                      {ledDetected
+                        ? "LED Light Detected"
+                        : "No LED Light Detected"}
+                    </p>
+
+                  </div>
+
+                  <Activity
+                    className={`h-8 w-8 ${
+                      ledDetected
+                        ? "text-orange-400"
+                        : "text-slate-600"
+                    }`}
+                  />
+
+                </div>
+
+
+                {bestLed && (
+
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+
+                    <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+
+                      <p className="text-[10px] text-slate-600">
+                        Detected Class
+                      </p>
+
+                      <p className="mt-1 text-sm font-semibold text-white">
+                        {bestLed.class || "LED_Light"}
+                      </p>
+
+                    </div>
+
+
+                    <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+
+                      <p className="text-[10px] text-slate-600">
+                        Confidence
+                      </p>
+
+                      <p className="mt-1 text-sm font-semibold text-orange-400">
+                        {(Number(bestLed.confidence || 0) * 100).toFixed(1)}%
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                )}
+
+              </div>
+
+
+              {/* ==================================================
+                  ANNOTATED IMAGE
+              ================================================== */}
+
+              {numberPlate?.annotated_image && (
 
                 <div className="overflow-hidden rounded-xl border border-slate-800 bg-black">
 
@@ -1037,14 +1892,13 @@ function AIInspection() {
                     </p>
 
                     <p className="mt-1 text-xs text-slate-500">
-                      Red boundary indicates detected number plate
+                      Number plate detection and OCR view
                     </p>
 
                   </div>
 
-
                   <img
-                    src={`http://127.0.0.1:8000/inspection-results/${result.annotated_image}`}
+                    src={`http://127.0.0.1:8000/inspection-results/${numberPlate.annotated_image}`}
                     alt="AI detected number plate"
                     className="max-h-[420px] w-full object-contain"
                   />
@@ -1054,236 +1908,16 @@ function AIInspection() {
               )}
 
 
-
-              {/* ----------------------------------------------
-                  STATUS
-              ---------------------------------------------- */}
-
-              <div
-                className={`rounded-xl border p-4 ${
-                  result.status === "Detected"
-                    ? "border-emerald-500/20 bg-emerald-500/5"
-                    : "border-orange-500/20 bg-orange-500/5"
-                }`}
-              >
-
-                <div className="flex items-center justify-between">
-
-                  <div>
-
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500">
-                      Detection Status
-                    </p>
-
-
-                    <p
-                      className={`mt-1 text-lg font-bold ${
-                        result.status === "Detected"
-                          ? "text-emerald-400"
-                          : "text-orange-400"
-                      }`}
-                    >
-                      {result.status}
-                    </p>
-
-                  </div>
-
-
-                  {result.status === "Detected" ? (
-
-                    <ShieldCheck className="h-8 w-8 text-emerald-400" />
-
-                  ) : (
-
-                    <Activity className="h-8 w-8 text-orange-400" />
-
-                  )}
-
-                </div>
-
-              </div>
-
-
-
-              {/* ----------------------------------------------
-                  BEST DETECTION
-              ---------------------------------------------- */}
-
-              {result.best_detection && (
-
-                <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-
-                  <p className="text-[10px] uppercase tracking-wider text-slate-500">
-                    Best Detection
-                  </p>
-
-
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-
-
-                    {/* Class */}
-
-                    <div>
-
-                      <p className="text-[10px] text-slate-600">
-                        Class
-                      </p>
-
-                      <p className="mt-1 text-sm font-semibold text-white">
-                        {result.best_detection.class}
-                      </p>
-
-                    </div>
-
-
-
-                    {/* YOLO confidence */}
-
-                    <div>
-
-                      <p className="text-[10px] text-slate-600">
-                        YOLO Confidence
-                      </p>
-
-                      <p className="mt-1 text-sm font-semibold text-cyan-400">
-
-                        {(
-                          result.best_detection.confidence * 100
-                        ).toFixed(1)}
-
-                        %
-
-                      </p>
-
-                    </div>
-
-
-
-                    {/* OCR confidence */}
-
-                    <div>
-
-                      <p className="text-[10px] text-slate-600">
-                        OCR Confidence
-                      </p>
-
-                      <p className="mt-1 text-sm font-semibold text-violet-400">
-
-                        {result.best_detection.ocr_confidence != null
-                          ? (
-                              result.best_detection.ocr_confidence * 100
-                            ).toFixed(1)
-                          : "0.0"}
-
-                        %
-
-                      </p>
-
-                    </div>
-
-
-                  </div>
-
-
-
-                  {/* ------------------------------------------
-                      NUMBER PLATE
-                  ------------------------------------------ */}
-
-                  {result.best_detection.plate_number && (
-
-                    <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
-
-                      <p className="text-[10px] uppercase tracking-wider text-slate-500">
-                        Detected Number Plate
-                      </p>
-
-
-                      <p className="mt-2 text-2xl font-bold tracking-[0.18em] text-cyan-300">
-                        {result.best_detection.plate_number}
-                      </p>
-
-                    </div>
-
-                  )}
-
-                </div>
-
-              )}
-
-
-
-              {/* ----------------------------------------------
-                  ALL DETECTIONS
-              ---------------------------------------------- */}
-
-              {result.detections &&
-                result.detections.length > 0 && (
-
-                <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-
-                  <p className="text-[10px] uppercase tracking-wider text-slate-500">
-                    Detected Plates
-                  </p>
-
-
-                  <div className="mt-3 space-y-2">
-
-                    {result.detections.map(
-                      (detection, index) => (
-
-                        <div
-                          key={index}
-                          className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
-                        >
-
-                          <div>
-
-                            <p className="text-xs font-medium text-white">
-                              {detection.plate_number ||
-                                "Number plate"}
-                            </p>
-
-                            <p className="text-[10px] text-slate-500">
-                              {detection.class}
-                            </p>
-
-                          </div>
-
-
-                          <p className="text-xs font-semibold text-cyan-400">
-
-                            {(
-                              detection.confidence * 100
-                            ).toFixed(1)}
-
-                            %
-
-                          </p>
-
-                        </div>
-
-                      )
-                    )}
-
-                  </div>
-
-                </div>
-
-              )}
-
-
-
-              {/* ----------------------------------------------
-                  MESSAGE
-              ---------------------------------------------- */}
-
-              {result.message && (
+              {/* ==================================================
+                  NUMBER PLATE MESSAGE
+              ================================================== */}
+
+              {numberPlate?.message && (
 
                 <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
 
                   <p className="text-xs leading-5 text-slate-400">
-                    {result.message}
+                    {numberPlate.message}
                   </p>
 
                 </div>
@@ -1302,12 +1936,558 @@ function AIInspection() {
   );
 }
 
+// =========================================================
+// INSPECTION HISTORY
+// =========================================================
+
+function InspectionHistory() {
+  const [inspections, setInspections] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const loadInspections = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await fetch(
+          "http://127.0.0.1:8000/api/inspections"
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Server returned ${response.status}`
+          );
+        }
+
+        const data = await response.json();
+
+        setInspections(
+          Array.isArray(data.inspections)
+            ? data.inspections
+            : []
+        );
+      } catch (err) {
+        console.error(
+          "Failed to load inspection history:",
+          err
+        );
+
+        setError(
+          "Unable to load inspection history."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInspections();
+  }, []);
+
+  // -------------------------------------------------------
+  // Loading
+  // -------------------------------------------------------
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">
+            Records
+          </p>
+
+          <h1 className="mt-1 text-2xl font-bold text-white sm:text-3xl">
+            Inspection History
+          </h1>
+
+          <p className="mt-1 text-sm text-slate-500">
+            View previous AI vehicle inspections.
+          </p>
+        </div>
+
+        <div className="flex min-h-[300px] items-center justify-center rounded-2xl border border-slate-800 bg-[#0a111d]/80">
+          <div className="text-center">
+
+            <Activity className="mx-auto h-8 w-8 animate-pulse text-cyan-400" />
+
+            <p className="mt-3 text-sm text-slate-400">
+              Loading inspection records...
+            </p>
+
+          </div>
+        </div>
+
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------
+  // Error
+  // -------------------------------------------------------
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">
+            Records
+          </p>
+
+          <h1 className="mt-1 text-2xl font-bold text-white sm:text-3xl">
+            Inspection History
+          </h1>
+        </div>
+
+        <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
+          <p className="text-sm font-medium text-red-400">
+            {error}
+          </p>
+
+          <p className="mt-2 text-xs text-slate-500">
+            Make sure the FastAPI backend is running on port 8000.
+          </p>
+        </div>
+
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------
+  // Empty state
+  // -------------------------------------------------------
+
+  if (inspections.length === 0) {
+    return (
+      <div className="space-y-6">
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">
+            Records
+          </p>
+
+          <h1 className="mt-1 text-2xl font-bold text-white sm:text-3xl">
+            Inspection History
+          </h1>
+
+          <p className="mt-1 text-sm text-slate-500">
+            View previous AI vehicle inspections.
+          </p>
+        </div>
+
+        <div className="flex min-h-[300px] items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-950/30">
+
+          <div className="text-center">
+
+            <Activity className="mx-auto h-10 w-10 text-cyan-400/50" />
+
+            <p className="mt-3 text-sm font-medium text-slate-400">
+              No inspections yet
+            </p>
+
+            <p className="mt-1 text-xs text-slate-600">
+              Completed vehicle inspections will appear here.
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------
+  // History
+  // -------------------------------------------------------
+
+  return (
+    <div className="space-y-6">
+
+      {/* Page heading */}
+
+      <div>
+
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">
+          Records
+        </p>
+
+        <h1 className="mt-1 text-2xl font-bold text-white sm:text-3xl">
+          Inspection History
+        </h1>
+
+        <p className="mt-1 text-sm text-slate-500">
+          View previous AI vehicle inspections.
+        </p>
+
+      </div>
+
+
+      {/* Summary */}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+
+        <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-5">
+
+          <p className="text-xs text-slate-500">
+            Total Inspections
+          </p>
+
+          <p className="mt-2 text-2xl font-bold text-white">
+            {inspections.length}
+          </p>
+
+        </div>
+
+
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
+
+          <p className="text-xs text-slate-500">
+            Number Plates Detected
+          </p>
+
+          <p className="mt-2 text-2xl font-bold text-emerald-400">
+            {
+              inspections.filter(
+                (inspection) =>
+                  inspection.number_plate_detected
+              ).length
+            }
+          </p>
+
+        </div>
+
+
+        <div className="rounded-2xl border border-orange-500/20 bg-orange-500/5 p-5">
+
+          <p className="text-xs text-slate-500">
+            LED Modifications Detected
+          </p>
+
+          <p className="mt-2 text-2xl font-bold text-orange-400">
+            {
+              inspections.filter(
+                (inspection) =>
+                  inspection.led_detected
+              ).length
+            }
+          </p>
+
+        </div>
+
+      </div>
+
+
+      {/* Inspection table */}
+
+      <DashboardPanel title="Previous Inspections">
+
+        <div className="overflow-x-auto">
+
+          <table className="w-full min-w-[900px] text-left">
+
+            <thead>
+
+              <tr className="border-b border-slate-800 text-[10px] uppercase tracking-wider text-slate-500">
+
+                <th className="px-4 py-3">
+                  ID
+                </th>
+
+                <th className="px-4 py-3">
+                  Date
+                </th>
+
+                <th className="px-4 py-3">
+                  Number Plate
+                </th>
+
+                <th className="px-4 py-3">
+                  Confidence
+                </th>
+
+                <th className="px-4 py-3">
+                  LED Light
+                </th>
+
+                <th className="px-4 py-3">
+                  Confidence
+                </th>
+
+                <th className="px-4 py-3">
+                  Status
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody>
+
+              {inspections.map((inspection) => {
+
+                const plateDetected =
+                  Boolean(
+                    inspection.number_plate_detected
+                  );
+
+                const ledDetected =
+                  Boolean(
+                    inspection.led_detected
+                  );
+
+                const needsVerification =
+                  !plateDetected ||
+                  ledDetected;
+
+                return (
+
+                  <tr
+                    key={inspection.id}
+                    className="border-b border-slate-900 transition hover:bg-white/[0.02]"
+                  >
+
+                    {/* ID */}
+
+                    <td className="px-4 py-4">
+
+                      <span className="text-xs font-semibold text-cyan-400">
+                        INS-
+                        {String(
+                          inspection.id
+                        ).padStart(5, "0")}
+                      </span>
+
+                    </td>
+
+
+                    {/* Date */}
+
+                    <td className="px-4 py-4">
+
+                      <p className="text-xs text-white">
+                        {inspection.created_at
+                          ? new Date(
+                              inspection.created_at
+                            ).toLocaleDateString(
+                              "en-IN",
+                              {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              }
+                            )
+                          : "—"}
+                      </p>
+
+                      <p className="mt-1 text-[10px] text-slate-600">
+                        {inspection.created_at
+                          ? new Date(
+                              inspection.created_at
+                            ).toLocaleTimeString(
+                              "en-IN",
+                              {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )
+                          : ""}
+                      </p>
+
+                    </td>
+
+
+                    {/* Number plate */}
+
+                    <td className="px-4 py-4">
+
+                      {plateDetected ? (
+
+                        <span className="inline-flex items-center gap-2 text-xs font-medium text-emerald-400">
+
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+
+                          Detected
+
+                        </span>
+
+                      ) : (
+
+                        <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
+
+                          <span className="h-1.5 w-1.5 rounded-full bg-slate-600" />
+
+                          Not Detected
+
+                        </span>
+
+                      )}
+
+                    </td>
+
+
+                    {/* Plate confidence */}
+
+                    <td className="px-4 py-4">
+
+                      {plateDetected ? (
+
+                        <span className="text-xs font-semibold text-cyan-400">
+
+                          {(
+                            Number(
+                              inspection.number_plate_confidence || 0
+                            ) * 100
+                          ).toFixed(1)}
+                          %
+
+                        </span>
+
+                      ) : (
+
+                        <span className="text-xs text-slate-600">
+                          —
+                        </span>
+
+                      )}
+
+                    </td>
+
+
+                    {/* LED */}
+
+                    <td className="px-4 py-4">
+
+                      {ledDetected ? (
+
+                        <span className="inline-flex items-center gap-2 text-xs font-medium text-orange-400">
+
+                          <span className="h-1.5 w-1.5 rounded-full bg-orange-400" />
+
+                          Detected
+
+                        </span>
+
+                      ) : (
+
+                        <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
+
+                          <span className="h-1.5 w-1.5 rounded-full bg-slate-600" />
+
+                          Not Detected
+
+                        </span>
+
+                      )}
+
+                    </td>
+
+
+                    {/* LED confidence */}
+
+                    <td className="px-4 py-4">
+
+                      {ledDetected ? (
+
+                        <span className="text-xs font-semibold text-orange-400">
+
+                          {(
+                            Number(
+                              inspection.led_confidence || 0
+                            ) * 100
+                          ).toFixed(1)}
+                          %
+
+                        </span>
+
+                      ) : (
+
+                        <span className="text-xs text-slate-600">
+                          —
+                        </span>
+
+                      )}
+
+                    </td>
+
+
+                    {/* Status */}
+
+                    <td className="px-4 py-4">
+
+                      <span
+                        className={`inline-flex items-center gap-1.5 text-[10px] font-medium ${
+                          needsVerification
+                            ? "text-orange-400"
+                            : "text-emerald-400"
+                        }`}
+                      >
+
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            needsVerification
+                              ? "bg-orange-400"
+                              : "bg-emerald-400"
+                          }`}
+                        />
+
+                        {needsVerification
+                          ? "Needs Verification"
+                          : "No Issues Detected"}
+
+                      </span>
+
+                    </td>
+
+                  </tr>
+
+                );
+              })}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </DashboardPanel>
+
+    </div>
+  );
+}
+
 function App() {
+  const [showLanding, setShowLanding] = useState(true);
+
   const [activePage, setActivePage] = useState("dashboard");
+
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // ---------------------------------------------------------
+  // LANDING PAGE
+  // ---------------------------------------------------------
+
+  if (showLanding) {
+    return (
+      <LandingPage
+        onInspect={() => {
+          setShowLanding(false);
+          setActivePage("dashboard");
+        }}
+      />
+    );
+  }
+
+  // ---------------------------------------------------------
+  // MAIN APPLICATION
+  // ---------------------------------------------------------
 
   return (
     <div className="min-h-screen bg-[#050914] text-slate-200">
+
       <Sidebar
         activePage={activePage}
         setActivePage={setActivePage}
@@ -1316,32 +2496,49 @@ function App() {
       />
 
       <div className="min-h-screen lg:pl-[270px]">
+
         <TopBar setMobileOpen={setMobileOpen} />
 
         <main className="px-4 py-6 sm:px-6 lg:px-8">
-  {activePage === "dashboard" ? (
-    <Dashboard />
-  ) : activePage === "assistant" ? (
-    <VehicleAssistant />
-  ) : activePage === "inspection" ? (
-    <AIInspection />
-  ) : (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <div className="text-center">
-        <Activity className="mx-auto h-10 w-10 text-cyan-400" />
 
-        <h2 className="mt-4 text-xl font-bold text-white">
-          {NAV_ITEMS.find((item) => item.id === activePage)?.label}
-        </h2>
+          {activePage === "dashboard" ? (
+            <Dashboard />
 
-        <p className="mt-2 text-sm text-slate-500">
-          This module will be connected next.
-        </p>
+          ) : activePage === "assistant" ? (
+            <VehicleAssistant />
+
+          ) : activePage === "inspection" ? (
+            <AIInspection />
+
+          ) : activePage === "history" ? (
+            <InspectionHistory />
+
+          ) : (
+            <div className="flex min-h-[60vh] items-center justify-center">
+
+              <div className="text-center">
+
+                <Activity className="mx-auto h-10 w-10 text-cyan-400" />
+
+                <h2 className="mt-4 text-xl font-bold text-white">
+                  {NAV_ITEMS.find(
+                    (item) => item.id === activePage
+                  )?.label}
+                </h2>
+
+                <p className="mt-2 text-sm text-slate-500">
+                  This module will be connected next.
+                </p>
+
+              </div>
+
+            </div>
+          )}
+
+        </main>
+
       </div>
-    </div>
-  )}
-</main>
-      </div>
+
     </div>
   );
 }
