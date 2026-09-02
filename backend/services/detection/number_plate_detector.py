@@ -1,19 +1,18 @@
 from pathlib import Path
 
 import cv2
-import easyocr
 from ultralytics import YOLO
 
 
-# ---------------------------------------------------------
-# Paths
-# ---------------------------------------------------------
+# =========================================================
+# PATHS
+# =========================================================
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 MODEL_PATH = (
     PROJECT_ROOT
-    / "ai_models"
+    / "models"
     / "number_plate"
     / "best.pt"
 )
@@ -25,18 +24,21 @@ OUTPUT_DIR = (
     / "results"
 )
 
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+OUTPUT_DIR.mkdir(
+    parents=True,
+    exist_ok=True,
+)
 
 
-# ---------------------------------------------------------
-# Cached models
-# ---------------------------------------------------------
+# =========================================================
+# CACHED MODEL
+# =========================================================
 
 _model = None
-_ocr_reader = None
 
 
 def get_model():
+
     global _model
 
     if _model is None:
@@ -46,57 +48,52 @@ def get_model():
                 f"Number plate model not found: {MODEL_PATH}"
             )
 
+        print(
+            f"[NUMBER PLATE] Loading YOLO model: "
+            f"{MODEL_PATH}"
+        )
+
         _model = YOLO(str(MODEL_PATH))
 
     return _model
 
 
-def get_ocr_reader():
-    global _ocr_reader
-
-    if _ocr_reader is None:
-        _ocr_reader = easyocr.Reader(
-            ["en"],
-            gpu=False,
-        )
-
-    return _ocr_reader
-
-
-# ---------------------------------------------------------
-# Clean OCR result
-# ---------------------------------------------------------
-
-def clean_plate_text(text: str):
-
-    text = text.upper()
-
-    allowed = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-    return "".join(
-        character
-        for character in text
-        if character in allowed
-    )
-
-
-# ---------------------------------------------------------
-# Number plate detection + OCR
-# ---------------------------------------------------------
+# =========================================================
+# NUMBER PLATE DETECTION ONLY
+# =========================================================
 
 def detect_number_plate(
     image_path: str,
     confidence_threshold: float = 0.40,
 ):
 
+    # -----------------------------------------------------
+    # Load image
+    # -----------------------------------------------------
+
     image = cv2.imread(image_path)
 
     if image is None:
         raise ValueError(
-            "Unable to read the uploaded image."
+            f"Unable to read image: {image_path}"
         )
 
+    image_height, image_width = image.shape[:2]
+
+    print(
+        f"[NUMBER PLATE] Image size: "
+        f"{image_width}x{image_height}"
+    )
+
+    # -----------------------------------------------------
+    # Load YOLO model
+    # -----------------------------------------------------
+
     model = get_model()
+
+    # -----------------------------------------------------
+    # Run detection
+    # -----------------------------------------------------
 
     results = model.predict(
         source=image,
@@ -105,7 +102,13 @@ def detect_number_plate(
     )
 
     detections = []
+
+    # Copy original image for annotation
     annotated_image = image.copy()
+
+    # -----------------------------------------------------
+    # Process detections
+    # -----------------------------------------------------
 
     for result in results:
 
@@ -115,6 +118,10 @@ def detect_number_plate(
         boxes = result.boxes
 
         for i in range(len(boxes)):
+
+            # ---------------------------------------------
+            # Coordinates
+            # ---------------------------------------------
 
             xyxy = (
                 boxes.xyxy[i]
@@ -145,94 +152,117 @@ def detect_number_plate(
                 xyxy,
             )
 
-            # -------------------------------------------------
-            # Crop plate
-            # -------------------------------------------------
+            # ---------------------------------------------
+            # Keep box inside image
+            # ---------------------------------------------
 
-            plate_crop = image[
-                max(0, y1):min(image.shape[0], y2),
-                max(0, x1):min(image.shape[1], x2),
-            ]
+            x1 = max(0, x1)
+            y1 = max(0, y1)
 
-            plate_number = ""
-            ocr_confidence = 0.0
+            x2 = min(
+                image_width,
+                x2,
+            )
 
-            # -------------------------------------------------
-            # OCR
-            # -------------------------------------------------
+            y2 = min(
+                image_height,
+                y2,
+            )
 
-            if plate_crop.size > 0:
+            # ---------------------------------------------
+            # Ignore invalid boxes
+            # ---------------------------------------------
 
-                try:
+            if x2 <= x1 or y2 <= y1:
+                continue
 
-                    reader = get_ocr_reader()
-
-                    ocr_results = reader.readtext(
-                        plate_crop,
-                        detail=1,
-                        paragraph=False,
-                    )
-
-                    if ocr_results:
-
-                        best_ocr = max(
-                            ocr_results,
-                            key=lambda item: item[2],
-                        )
-
-                        plate_number = clean_plate_text(
-                            best_ocr[1]
-                        )
-
-                        ocr_confidence = float(
-                            best_ocr[2]
-                        )
-
-                except Exception as ocr_error:
-
-                    print(
-                        f"OCR error: {ocr_error}"
-                    )
-
-            # -------------------------------------------------
-            # RED bounding box
-            # -------------------------------------------------
+            # ---------------------------------------------
+            # RED BOUNDING BOX
+            # ---------------------------------------------
 
             cv2.rectangle(
                 annotated_image,
                 (x1, y1),
                 (x2, y2),
                 (0, 0, 255),
-                4,
+                5,
             )
 
-            # -------------------------------------------------
-            # Label
-            # -------------------------------------------------
+            # ---------------------------------------------
+            # LABEL
+            # ---------------------------------------------
 
             label = (
                 f"NUMBER PLATE "
                 f"{confidence * 100:.1f}%"
             )
 
-            if plate_number:
-                label += f" | {plate_number}"
+            font = cv2.FONT_HERSHEY_SIMPLEX
+
+            font_scale = 0.75
+
+            thickness = 2
+
+            (
+                text_width,
+                text_height,
+            ), baseline = cv2.getTextSize(
+                label,
+                font,
+                font_scale,
+                thickness,
+            )
+
+            label_x = x1
 
             label_y = max(
                 y1 - 12,
-                30,
+                text_height + 15,
             )
+
+            # ---------------------------------------------
+            # RED LABEL BACKGROUND
+            # ---------------------------------------------
+
+            cv2.rectangle(
+                annotated_image,
+                (
+                    label_x,
+                    label_y - text_height - 12,
+                ),
+                (
+                    label_x + text_width + 12,
+                    label_y + baseline,
+                ),
+                (0, 0, 255),
+                -1,
+            )
+
+            # ---------------------------------------------
+            # WHITE LABEL TEXT
+            # ---------------------------------------------
 
             cv2.putText(
                 annotated_image,
                 label,
-                (x1, label_y),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.70,
-                (0, 0, 255),
-                2,
+                (
+                    label_x + 6,
+                    label_y - 3,
+                ),
+                font,
+                font_scale,
+                (255, 255, 255),
+                thickness,
                 cv2.LINE_AA,
             )
+
+            # ---------------------------------------------
+            # SAVE DETECTION
+            #
+            # IMPORTANT:
+            # No plate_number.
+            # No OCR.
+            # ---------------------------------------------
 
             detections.append(
                 {
@@ -247,32 +277,28 @@ def detect_number_plate(
                         "x2": x2,
                         "y2": y2,
                     },
-                    "plate_number": plate_number,
-                    "ocr_confidence": round(
-                        ocr_confidence,
-                        4,
-                    ),
                 }
             )
 
-    # ---------------------------------------------------------
-    # No plate detected
-    # ---------------------------------------------------------
+    # =====================================================
+    # NO NUMBER PLATE
+    # =====================================================
 
     if not detections:
 
         return {
             "status": "Not Detected",
             "detections": [],
+            "best_detection": None,
+            "annotated_image": None,
             "message": (
-                "Number plate not detected. "
-                "Manual verification recommended."
+                "Number plate was not detected."
             ),
         }
 
-    # ---------------------------------------------------------
-    # Best detection
-    # ---------------------------------------------------------
+    # =====================================================
+    # BEST DETECTION
+    # =====================================================
 
     best_detection = max(
         detections,
@@ -280,30 +306,51 @@ def detect_number_plate(
         detection["confidence"],
     )
 
-    # ---------------------------------------------------------
-    # Save annotated image
-    # ---------------------------------------------------------
+    # =====================================================
+    # SAVE ANNOTATED IMAGE
+    # =====================================================
 
     output_filename = (
-        f"{Path(image_path).stem}_annotated.jpg"
+        f"{Path(image_path).stem}"
+        f"_annotated.jpg"
     )
 
     output_path = (
         OUTPUT_DIR / output_filename
     )
 
-    cv2.imwrite(
+    success = cv2.imwrite(
         str(output_path),
         annotated_image,
     )
 
-    # ---------------------------------------------------------
-    # Return result
-    # ---------------------------------------------------------
+    if not success:
+
+        raise RuntimeError(
+            f"Unable to save annotated image: "
+            f"{output_path}"
+        )
+
+    print(
+        f"[NUMBER PLATE] Annotated image saved: "
+        f"{output_path}"
+    )
+
+    # =====================================================
+    # FINAL RESULT
+    # =====================================================
 
     return {
         "status": "Detected",
+
         "detections": detections,
+
         "best_detection": best_detection,
+
         "annotated_image": output_filename,
+
+        "message": (
+            "Number plate detected successfully. "
+            "Plate characters are not read."
+        ),
     }

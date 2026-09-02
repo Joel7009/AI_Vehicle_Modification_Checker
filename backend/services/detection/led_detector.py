@@ -1,12 +1,27 @@
 import os
-from inference_sdk import InferenceHTTPClient
+from pathlib import Path
+
+from dotenv import load_dotenv
+from inference_sdk import (
+    InferenceHTTPClient,
+    InferenceConfiguration,
+)
+
+
+# ---------------------------------------------------------
+# Project paths
+# ---------------------------------------------------------
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+ENV_FILE = PROJECT_ROOT / ".env"
+
+load_dotenv(ENV_FILE)
 
 
 # ---------------------------------------------------------
 # Roboflow configuration
 # ---------------------------------------------------------
-
-ROBOFLOW_API_KEY = os.getenv("ROBOFLOW_API_KEY")
 
 WORKSPACE_NAME = "joel-john-joseph"
 
@@ -30,24 +45,46 @@ def get_client():
 
     if _client is None:
 
-        if not ROBOFLOW_API_KEY:
+        # Load the API key when the client is created
+        load_dotenv(
+            ENV_FILE,
+            override=True,
+        )
+
+        api_key = os.getenv(
+            "ROBOFLOW_API_KEY"
+        )
+
+        if not api_key:
             raise RuntimeError(
-                "ROBOFLOW_API_KEY environment variable is not set."
+                "ROBOFLOW_API_KEY was not found "
+                "in the project .env file."
             )
 
         _client = InferenceHTTPClient(
             api_url=ROBOFLOW_API_URL,
-            api_key=ROBOFLOW_API_KEY,
+            api_key=api_key,
+        ).configure(
+            InferenceConfiguration(
+                api_key_transport="header"
+            )
         )
 
     return _client
 
 
 # ---------------------------------------------------------
-# LED BAR detection
+# LED Light Detection
 # ---------------------------------------------------------
 
 def detect_led_bar(image_path: str):
+
+    image_path = str(image_path)
+
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(
+            f"Image not found: {image_path}"
+        )
 
     client = get_client()
 
