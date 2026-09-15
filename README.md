@@ -1,144 +1,357 @@
 # AI Vehicle Modification Legality Checker
 
-An MSc AI project dashboard: upload a vehicle image, run it through an
-AI detection pipeline, cross-check detections against a configurable
-rule engine, and get a compliance score + legality report — all inside
-a futuristic, single-page Streamlit "AI command center" UI.
+An MSc Artificial Intelligence project for AI-assisted vehicle inspection and modification analysis.
 
-Ships in **DEMO MODE** out of the box — no trained model weights
-required to run and explore the full UI/UX and pipeline.
+The system uses computer vision models to detect vehicle components such as **number plates** and **LED light bars** from uploaded vehicle images. It also provides an **Ollama-powered AI assistant**, an interactive dashboard, and inspection history for reviewing previous vehicle analyses.
 
 ---
 
-## 1. Requirements
+## 1. Project Overview
 
-- Python 3.9–3.12
-- Windows, macOS, or Linux
+The AI Vehicle Modification Legality Checker combines computer vision and conversational AI to assist with vehicle inspection.
 
-## 2. Install (Windows / macOS / Linux)
+The system allows a user to:
 
-```bash
-# 1. Extract the ZIP, then open a terminal inside the project folder
-cd AI_Vehicle_Modification_Checker
-
-# 2. (Recommended) create a virtual environment
-python -m venv venv
-
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
-
-# 3. Install dependencies
-pip install -r requirements.txt
-```
-
-## 3. Run
-
-```bash
-python -m streamlit run app.py
-```
-
-Streamlit will print a local URL (usually `http://localhost:8501`) —
-open it in your browser.
+- Upload a vehicle image
+- Detect number plates using YOLO
+- Detect LED light bars using YOLO
+- View detection confidence and bounding boxes
+- Review inspection results through an interactive dashboard
+- Interact with an AI assistant powered by Ollama
+- View previous inspections through inspection history
 
 ---
 
-## 4. What works right now (Demo Mode)
+## 2. Key Features
 
-- Upload a vehicle image (JPG/PNG/WEBP)
-- Click **ANALYZE VEHICLE** → a real, timed AI-scanning animation runs
-  (image acquired → vehicle detected → AI vision active → modification
-  scan → rule engine → compliance analysis)
-- Three demo detections are generated: **LED Light Bar**, **Oversized
-  Wheel**, **Number Plate Missing**
-- Bounding boxes are drawn onto the image with OpenCV
-- The **Regulation Engine** cross-checks each detection against
-  `rules/rules.json`
-- A **Compliance Score** (0–100) and risk level are calculated
-  dynamically — not hard-coded
-- **Detected Modifications**, **Detection Confidence**, **AI
-  Reasoning**, **Scan Analytics**, **Violation Breakdown**, and
-  **Recent Scans** all render dynamically from the pipeline's output
-  object (and grow as you run more scans in a session)
+### 🚗 Vehicle Image Analysis
 
-## 5. Plugging in your real YOLO models
+Users can upload a vehicle image for AI-based inspection.
 
-Everything is designed so your three trained detectors slot in without
-touching the UI:
+### 🔢 Number Plate Detection
 
-1. Train each model separately (Ultralytics YOLOv8 recommended).
-2. Drop the weights in:
-   ```
-   models/oversized_wheel/best.pt
-   models/number_plate/best.pt
-   models/led_light_bar/best.pt
-   ```
-3. Open `core/model_interface.py`:
-   - Uncomment the `from ultralytics import YOLO` / `YOLO(path)` lines
-     in `load_models()`.
-   - Replace the `# --- DEMO RESULT ---` block in each
-     `detect_*()` function with a real `model.predict(...)` call,
-     converting the output boxes into the **standard detection
-     schema**:
-     ```python
-     {
-         "class_name": "oversized_wheel",
-         "display_name": "Oversized Wheel",
-         "confidence": 0.91,
-         "bbox": [x1, y1, x2, y2],
-         "status": "ILLEGAL",
-     }
-     ```
-4. That's it — `core/rules_engine.py`, `core/scoring.py`,
-   `core/scanner.py`, and every panel in `core/ui.py` already consume
-   that schema and need **no changes**.
+A YOLO-based object detection model is used to identify and locate number plates in vehicle images.
 
-You can add one model at a time; any detector without a `best.pt`
-simply keeps returning its demo result.
+### 💡 LED Light Bar Detection
 
-## 6. Editing the legal rules
+A YOLO-based object detection model is used to detect aftermarket LED light bars installed on vehicles.
 
-All rule text, references, risk levels, and score penalties live in
-`rules/rules.json` — no Python changes needed to update them. Replace
-the `CONFIGURE_OFFICIAL_RULE` placeholders with real CMVR clause
-references once you have them finalized.
+### 🤖 AI Assistant
 
-## 7. Project structure
+The system includes a conversational AI assistant powered by **Ollama**.
 
-```
-AI_Vehicle_Modification_Checker/
-    app.py                      # Streamlit entry point — wiring only
-    requirements.txt
-    README.md
-    core/
-        model_interface.py      # AI model abstraction layer (plug in YOLO here)
-        scanner.py               # Orchestrates detection -> rules -> scoring
-        rules_engine.py          # Loads/evaluates rules/rules.json
-        scoring.py                # Compliance score + risk level
-        ui.py                      # All CSS + panel rendering (futuristic theme)
-    models/
-        oversized_wheel/         # put best.pt here later
-        number_plate/            # put best.pt here later
-        led_light_bar/           # put best.pt here later
-    rules/
-        rules.json                # configurable legal rule set
-    assets/                        # logos/fonts/demo images (optional)
-    uploads/                        # (runtime scratch space)
-    outputs/                        # (runtime scratch space, e.g. reports)
-    pages/                          # notes for future native multipage routing
-```
+The assistant allows users to ask questions about the vehicle inspection and receive natural-language assistance.
 
-## 8. Notes
+### 📊 Interactive Dashboard
 
-- Scan history currently lives in `st.session_state` (resets when the
-  Streamlit process restarts). Swap in SQLite/a real DB later without
-  touching the UI — just change how `scan_history` is populated/read
-  in `app.py`.
-- Report generation (`VIEW FULL REPORT` / `GENERATE REPORT`) is wired
-  as a UI action point; hook it up to a PDF exporter (e.g. `reportlab`
-  or `fpdf2`) using the `scan_result` object already available in
-  `st.session_state`.
-- `rule_reference` / `requirement` / penalty values in `rules.json`
-  are **placeholders** — replace with verified CMVR text before using
-  this for anything beyond demonstration.
+The dashboard presents vehicle inspection information, including:
+
+- Detected objects
+- Detection confidence
+- Inspection information
+- Analysis results
+- Previous inspections
+
+### 🕒 Inspection History
+
+Previous vehicle inspections can be stored and reviewed through the inspection history section.
+
+---
+
+## 3. System Architecture
+
+The system follows the following general pipeline:
+
+    Vehicle Image
+          ↓
+    Frontend Application
+          ↓
+    Backend API
+          ↓
+    YOLO Object Detection
+          ↓
+    ┌─────────────────────┐
+    │ Number Plate        │
+    │ LED Light Bar       │
+    └─────────────────────┘
+          ↓
+    Detection Results
+          ↓
+    Dashboard / Inspection History
+          ↓
+    Ollama AI Assistant
+
+---
+
+## 4. Technologies Used
+
+### Frontend
+
+- React
+- JavaScript
+- HTML/CSS
+
+### Backend
+
+- Python
+- FastAPI / Python backend services
+
+### Computer Vision
+
+- YOLO
+- Ultralytics
+- OpenCV
+
+### Conversational AI
+
+- Ollama
+- Large Language Model (LLM)
+
+### Development Tools
+
+- Visual Studio Code
+- Git
+- GitHub
+
+---
+
+## 5. AI Models
+
+The project currently includes two main computer vision detection tasks.
+
+### Number Plate Detection
+
+The number plate detector identifies the location of vehicle number plates in an image.
+
+Example output:
+
+    Class: number_plate
+    Confidence: 77.5%
+
+The model produces a bounding box around the detected number plate.
+
+### LED Light Bar Detection
+
+The LED light bar detector identifies aftermarket LED light bars installed on vehicles.
+
+Example output:
+
+    Class: LED_Light
+    Confidence: 89%
+
+The model produces a bounding box around the detected LED light bar.
+
+---
+
+## 6. Conversational AI Assistant
+
+The project includes an AI assistant powered by Ollama.
+
+The chatbot provides a natural-language interface for interacting with the vehicle inspection system.
+
+Users can ask questions about:
+
+- Detection results
+- Vehicle inspection
+- Detected modifications
+- AI analysis
+
+The conversational AI component is separate from the YOLO detection models.
+
+YOLO performs visual detection, while Ollama provides natural-language interaction and assistance.
+
+---
+
+## 7. Project Structure
+
+    AI_Vehicle_Modification_Checker/
+    │
+    ├── backend/
+    │   ├── main.py
+    │   └── services/
+    │       └── detection/
+    │           └── number_plate_detector.py
+    │
+    ├── frontend/
+    │   └── src/
+    │       ├── App.jsx
+    │       └── LandingPage.jsx
+    │
+    ├── models/
+    │   ├── number_plate/
+    │   └── led_light_bar/
+    │
+    ├── data/
+    │
+    ├── README.md
+    └── requirements.txt
+
+---
+
+## 8. Installation
+
+Clone the repository:
+
+    git clone https://github.com/Joel7009/AI_Vehicle_Modification_Checker.git
+
+Enter the project directory:
+
+    cd AI_Vehicle_Modification_Checker
+
+Create a Python virtual environment:
+
+    python -m venv .venv
+
+Activate the environment.
+
+### macOS / Linux
+
+    source .venv/bin/activate
+
+### Windows
+
+    .venv\Scripts\activate
+
+Install the backend dependencies:
+
+    pip install -r requirements.txt
+
+---
+
+## 9. Running the Project
+
+The project consists of a frontend and backend application.
+
+### Backend
+
+Start the Python backend using the project's backend entry point.
+
+### Frontend
+
+Start the frontend development server from the `frontend` directory.
+
+The frontend provides the user interface for:
+
+- Vehicle image upload
+- Vehicle analysis
+- Detection results
+- Dashboard
+- Inspection history
+- AI assistant
+
+---
+
+## 10. Ollama AI Assistant
+
+Install and run Ollama on the development machine.
+
+The application communicates with the locally running Ollama model to provide conversational AI functionality.
+
+The AI assistant is used for natural-language interaction rather than object detection.
+
+---
+
+## 11. Model Detection Workflow
+
+The computer vision workflow is:
+
+    Upload Vehicle Image
+             ↓
+       Image Processing
+             ↓
+       YOLO Detection
+             ↓
+    ┌────────┴─────────┐
+    ↓                  ↓
+Number Plate       LED Light Bar
+Detection           Detection
+    ↓                  ↓
+    └────────┬─────────┘
+             ↓
+      Detection Results
+             ↓
+        Dashboard
+             ↓
+       Store Inspection
+             ↓
+      Inspection History
+
+---
+
+## 12. Model Evaluation
+
+The detection models are evaluated using object detection metrics such as:
+
+- Precision
+- Recall
+- mAP@50
+- mAP@50-95
+
+### Number Plate Detection
+
+The trained number plate model achieved:
+
+- Precision: 94.8%
+- Recall: 91.3%
+- mAP@50: 93.5%
+- mAP@50-95: 71.6%
+
+### LED Light Bar Detection
+
+The LED Light Bar model currently has:
+
+- mAP@50: 79.0% on the validation set
+
+Individual detection confidence varies depending on the input image.
+
+---
+
+## 13. Dashboard
+
+The dashboard provides a centralized interface for viewing vehicle inspection results.
+
+It can display:
+
+- Vehicle image
+- Detected modifications
+- Detection confidence
+- Inspection information
+- Analysis results
+- Inspection history
+- AI assistant
+
+---
+
+## 14. Inspection History
+
+Inspection results can be recorded and displayed through the inspection history feature.
+
+This allows users to review previously analyzed vehicle images and their corresponding detection results.
+
+---
+
+## 15. Future Improvements
+
+Possible future improvements include:
+
+- Additional vehicle modification detection models
+- More comprehensive legal rule integration
+- Improved detection accuracy with larger datasets
+- Advanced vehicle modification classification
+- Automated inspection reports
+- Improved database integration
+- Additional AI-assisted inspection features
+
+---
+
+## 16. Project Purpose
+
+The primary objective of this project is to demonstrate how Artificial Intelligence, computer vision, and conversational AI can be combined to assist with vehicle inspection and modification analysis.
+
+---
+
+## 17. Disclaimer
+
+This project is an academic MSc Artificial Intelligence project.
+
+AI detection results should be treated as an assistance mechanism and not as a definitive legal determination. Actual vehicle legality should be verified against applicable laws, regulations, and authorities.
