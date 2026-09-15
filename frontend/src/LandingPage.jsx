@@ -425,133 +425,327 @@ function HowItWorksSection() {
         </div>
   
   
-        <style>{`
-  
-          .pipeline-gradient {
-            color: transparent;
-            background: linear-gradient(
-              110deg,
-              #67e8f9,
-              #22d3ee,
-              #60a5fa,
-              #a78bfa,
-              #22d3ee,
-              #67e8f9
-            );
-            background-size: 300% 100%;
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: pipelineGradient 6s linear infinite;
-            filter: drop-shadow(0 0 10px rgba(34,211,238,0.16));
-          }
-  
-          @keyframes pipelineGradient {
-            0% {
-              background-position: 0% 50%;
-            }
-  
-            50% {
-              background-position: 100% 50%;
-            }
-  
-            100% {
-              background-position: 0% 50%;
-            }
-          }
-  
-          @keyframes pipelineEnergy {
-            0% {
-              transform: scaleX(0);
-              transform-origin: left;
-              opacity: 0;
-            }
-  
-            15% {
-              opacity: 1;
-            }
-  
-            50% {
-              transform: scaleX(1);
-              opacity: 1;
-            }
-  
-            85% {
-              opacity: 1;
-            }
-  
-            100% {
-              transform: scaleX(0);
-              transform-origin: right;
-              opacity: 0;
-            }
-          }
-  
-          @keyframes pipelineParticle {
-            0% {
-              left: 12.5%;
-              opacity: 0;
-            }
-  
-            10% {
-              opacity: 1;
-            }
-  
-            90% {
-              opacity: 1;
-            }
-  
-            100% {
-              left: 87.5%;
-              opacity: 0;
-            }
-          }
-  
-          @keyframes pipelineSweep {
-            0% {
-              background-position: 200% 0;
-            }
-  
-            100% {
-              background-position: -50% 0;
-            }
-          }
-  
-          @keyframes pipelineDot {
-            0%,
-            100% {
-              opacity: 0.25;
-              transform: scale(0.8);
-            }
-  
-            50% {
-              opacity: 1;
-              transform: scale(1.4);
-            }
-          }
-  
-          @keyframes pipelineWave {
-            from {
-              transform: scaleY(0.35);
-              opacity: 0.3;
-            }
-  
-            to {
-              transform: scaleY(1);
-              opacity: 0.9;
-            }
-          }
-  
-          @media (prefers-reduced-motion: reduce) {
-            .pipeline-gradient {
-              animation: none;
-            }
-          }
-  
-        `}</style>
+<style>{`
+
+  /* =====================================================
+     AI BACKGROUND PARTICLES
+  ===================================================== */
+
+  .ai-star {
+    opacity: 0.18;
+    will-change: opacity, transform, filter;
+
+    box-shadow:
+      0 0 4px rgba(34, 211, 238, 0.35);
+
+    animation-name: aiStarBlink;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+
+  @keyframes aiStarBlink {
+
+    0%,
+    100% {
+      opacity: 0.08;
+      transform: scale(0.7);
+
+      filter:
+        drop-shadow(
+          0 0 1px
+          rgba(34, 211, 238, 0.15)
+        );
+    }
+
+    20% {
+      opacity: 0.20;
+      transform: scale(0.9);
+
+      filter:
+        drop-shadow(
+          0 0 2px
+          rgba(34, 211, 238, 0.30)
+        );
+    }
+
+    45% {
+      opacity: 0.55;
+      transform: scale(1.1);
+
+      filter:
+        drop-shadow(
+          0 0 5px
+          rgba(34, 211, 238, 0.65)
+        );
+    }
+
+    55% {
+      opacity: 0.90;
+      transform: scale(1.3);
+
+      filter:
+        drop-shadow(
+          0 0 8px
+          rgba(34, 211, 238, 0.90)
+        );
+    }
+
+    70% {
+      opacity: 0.22;
+      transform: scale(0.9);
+
+      filter:
+        drop-shadow(
+          0 0 3px
+          rgba(34, 211, 238, 0.30)
+        );
+    }
+
+    85% {
+      opacity: 0.08;
+      transform: scale(0.75);
+    }
+
+  }
+
+
+  /* =====================================================
+     PIPELINE GRADIENT
+  ===================================================== */
+
+  .pipeline-gradient {
+    color: transparent;
+
+    background: linear-gradient(
+      110deg,
+      #67e8f9,
+      #22d3ee,
+      #60a5fa,
+      #a78bfa,
+      #22d3ee,
+      #67e8f9
+    );
+
+    background-size: 300% 100%;
+
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    animation:
+      pipelineGradient 6s linear infinite;
+
+    filter:
+      drop-shadow(
+        0 0 10px
+        rgba(34, 211, 238, 0.16)
+      );
+  }
+
+
+  @keyframes pipelineGradient {
+
+    0% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+
+    100% {
+      background-position: 0% 50%;
+    }
+
+  }
+
+
+  /* =====================================================
+     PIPELINE ENERGY
+  ===================================================== */
+
+  @keyframes pipelineEnergy {
+
+    0% {
+      transform: scaleX(0);
+      transform-origin: left;
+      opacity: 0;
+    }
+
+    15% {
+      opacity: 1;
+    }
+
+    50% {
+      transform: scaleX(1);
+      opacity: 1;
+    }
+
+    85% {
+      opacity: 1;
+    }
+
+    100% {
+      transform: scaleX(0);
+      transform-origin: right;
+      opacity: 0;
+    }
+
+  }
+
+
+  /* =====================================================
+     PIPELINE PARTICLE
+  ===================================================== */
+
+  @keyframes pipelineParticle {
+
+    0% {
+      left: 12.5%;
+      opacity: 0;
+    }
+
+    10% {
+      opacity: 1;
+    }
+
+    90% {
+      opacity: 1;
+    }
+
+    100% {
+      left: 87.5%;
+      opacity: 0;
+    }
+
+  }
+
+
+  /* =====================================================
+     PIPELINE SWEEP
+  ===================================================== */
+
+  @keyframes pipelineSweep {
+
+    0% {
+      background-position: 200% 0;
+    }
+
+    100% {
+      background-position: -50% 0;
+    }
+
+  }
+
+
+  /* =====================================================
+     PIPELINE DOT
+  ===================================================== */
+
+  @keyframes pipelineDot {
+
+    0%,
+    100% {
+      opacity: 0.25;
+      transform: scale(0.8);
+    }
+
+    50% {
+      opacity: 1;
+      transform: scale(1.4);
+    }
+
+  }
+
+
+  /* =====================================================
+     PIPELINE WAVE
+  ===================================================== */
+
+  @keyframes pipelineWave {
+
+    from {
+      transform: scaleY(0.35);
+      opacity: 0.3;
+    }
+
+    to {
+      transform: scaleY(1);
+      opacity: 0.9;
+    }
+
+  }
+
+
+  /* =====================================================
+     ACCESSIBILITY
+  ===================================================== */
+
+  @media (prefers-reduced-motion: reduce) {
+
+    .ai-star,
+    .pipeline-gradient {
+      animation: none !important;
+    }
+
+  }
+
+`}</style>
       </section>
     );
   }
+
+function StarField() {
+  const stars = Array.from({ length: 75 }, (_, index) => {
+    const x = (index * 47 + 13) % 100;
+    const y = (index * 71 + 9) % 100;
+
+    const size =
+      index % 12 === 0
+        ? 3
+        : index % 4 === 0
+          ? 2.2
+          : 1.6;
+
+    const delay = (index * 0.43) % 6;
+    const duration = 2.8 + ((index * 0.73) % 4);
+
+    return {
+      id: index,
+      x,
+      y,
+      size,
+      delay,
+      duration,
+    };
+  });
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-[2] overflow-hidden">
+      {stars.map((star) => (
+        <span
+          key={star.id}
+          className={`ai-star absolute rounded-full ${
+            star.id % 13 === 0
+              ? "bg-violet-300"
+              : star.id % 7 === 0
+                ? "bg-blue-300"
+                : "bg-cyan-300"
+          }`}
+          style={{
+            left: `${star.x}%`,
+            top: `${star.y}%`,
+            width: `${star.size}px`,
+            height: `${star.size}px`,
+            animationDuration: `${star.duration}s`,
+            animationDelay: `${star.delay}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 function LandingPage({ onInspect }) {
   const [stage, setStage] = useState(0);
@@ -609,35 +803,40 @@ function LandingPage({ onInspect }) {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#02050b] text-slate-200">
 
-      {/* =====================================================
-          BACKGROUND
-      ===================================================== */}
+{/* =====================================================
+    BACKGROUND
+===================================================== */}
 
-      <div className="pointer-events-none absolute inset-0">
+<div className="pointer-events-none absolute inset-0">
 
-        {/* Background grid */}
+  {/* Background grid */}
 
-        <div
-          className="absolute inset-0 opacity-[0.07]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(34,211,238,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.5) 1px, transparent 1px)",
-            backgroundSize: "70px 70px",
-          }}
-        />
+  <div
+    className="absolute inset-0 opacity-[0.07]"
+    style={{
+      backgroundImage:
+        "linear-gradient(rgba(34,211,238,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.5) 1px, transparent 1px)",
+      backgroundSize: "70px 70px",
+    }}
+  />
 
-        {/* Cyan ambient glow */}
+  {/* Live AI star particles */}
 
-        <div className="absolute left-[8%] top-[20%] h-[500px] w-[500px] rounded-full bg-cyan-500/[0.055] blur-[120px]" />
+  <StarField />
 
-        {/* Blue ambient glow */}
+  {/* Cyan ambient glow */}
 
-        <div className="absolute right-[5%] top-[10%] h-[500px] w-[500px] rounded-full bg-blue-600/[0.045] blur-[130px]" />
+  <div className="absolute left-[8%] top-[20%] h-[500px] w-[500px] rounded-full bg-cyan-500/[0.055] blur-[120px]" />
 
-        {/* Bottom violet ambience */}
+  {/* Blue ambient glow */}
 
-        <div className="absolute bottom-[-200px] left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-violet-500/[0.025] blur-[120px]" />
-      </div>
+  <div className="absolute right-[5%] top-[10%] h-[500px] w-[500px] rounded-full bg-blue-600/[0.045] blur-[130px]" />
+
+  {/* Bottom violet ambience */}
+
+  <div className="absolute bottom-[-200px] left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-violet-500/[0.025] blur-[120px]" />
+
+</div>
 
 
       {/* =====================================================
@@ -1238,387 +1437,515 @@ function LandingPage({ onInspect }) {
           ANIMATIONS
       ===================================================== */}
 
-      <style>{`
-
-        /* =====================================================
-           MAIN HEADING GLOW
-        ===================================================== */
+<style>{`
 
-        .hero-title {
-          animation:
-            heroTitleBreathing 4.5s ease-in-out infinite;
-        }
+  /* =====================================================
+     HERO TITLE
+  ===================================================== */
 
+  .hero-title {
+    position: relative;
+  }
+
+
+  /* =====================================================
+     WHITE GLASS TEXT
+     VEHICLE
+  ===================================================== */
+
+  .hero-glow-white {
+    position: relative;
+    color: transparent;
+
+    background: linear-gradient(
+      110deg,
+      #ffffff 0%,
+      #dffcff 18%,
+      #ffffff 35%,
+      #a5f3fc 52%,
+      #ffffff 70%,
+      #dbeafe 86%,
+      #ffffff 100%
+    );
+
+    background-size: 300% 100%;
+
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    animation:
+      headingGradient 7s ease-in-out infinite,
+      whiteTextGlow 4s ease-in-out infinite;
+  }
+
+
+  /* =====================================================
+     CYAN / BLUE GLASS TEXT
+     INTELLIGENCE / REDEFINED
+  ===================================================== */
+
+  .hero-glow-gradient {
+    position: relative;
+    color: transparent;
+
+    background: linear-gradient(
+      110deg,
+      #67e8f9 0%,
+      #22d3ee 16%,
+      #38bdf8 32%,
+      #60a5fa 48%,
+      #a78bfa 60%,
+      #38bdf8 72%,
+      #22d3ee 86%,
+      #67e8f9 100%
+    );
+
+    background-size: 320% 100%;
+
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    animation:
+      headingGradient 7s ease-in-out infinite,
+      cyanTextGlow 4s ease-in-out infinite;
+  }
+
+
+  /* =====================================================
+     MOVING HEADING GRADIENT
+  ===================================================== */
+
+  @keyframes headingGradient {
+
+    0% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+
+    100% {
+      background-position: 0% 50%;
+    }
+
+  }
+
+
+  /* =====================================================
+     WHITE TEXT GLOW
+  ===================================================== */
+
+  @keyframes whiteTextGlow {
+
+    0%,
+    100% {
+      filter:
+        drop-shadow(
+          0 0 4px
+          rgba(255, 255, 255, 0.08)
+        )
+        drop-shadow(
+          0 0 14px
+          rgba(34, 211, 238, 0.06)
+        );
+    }
+
+    50% {
+      filter:
+        drop-shadow(
+          0 0 8px
+          rgba(255, 255, 255, 0.18)
+        )
+        drop-shadow(
+          0 0 22px
+          rgba(34, 211, 238, 0.14)
+        )
+        drop-shadow(
+          0 0 38px
+          rgba(59, 130, 246, 0.07)
+        );
+    }
+
+  }
+
+
+  /* =====================================================
+     CYAN / BLUE TEXT GLOW
+  ===================================================== */
+
+  @keyframes cyanTextGlow {
+
+    0%,
+    100% {
+      filter:
+        drop-shadow(
+          0 0 5px
+          rgba(34, 211, 238, 0.14)
+        )
+        drop-shadow(
+          0 0 15px
+          rgba(59, 130, 246, 0.07)
+        );
+    }
+
+    50% {
+      filter:
+        drop-shadow(
+          0 0 9px
+          rgba(34, 211, 238, 0.36)
+        )
+        drop-shadow(
+          0 0 23px
+          rgba(34, 211, 238, 0.18)
+        )
+        drop-shadow(
+          0 0 40px
+          rgba(59, 130, 246, 0.11)
+        );
+    }
+
+  }
+
+
+  /* =====================================================
+     BRAND GLASS GRADIENT
+  ===================================================== */
+
+  .brand-glass-text {
+    color: transparent;
+
+    background: linear-gradient(
+      110deg,
+      #ffffff,
+      #67e8f9,
+      #60a5fa,
+      #a78bfa,
+      #ffffff,
+      #22d3ee,
+      #ffffff
+    );
+
+    background-size: 280% 100%;
+
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    animation:
+      brandGradient 6s linear infinite,
+      brandGlow 4s ease-in-out infinite;
+  }
+
+
+  @keyframes brandGradient {
+
+    0% {
+      background-position: 200% 50%;
+    }
+
+    100% {
+      background-position: -20% 50%;
+    }
+
+  }
+
+
+  @keyframes brandGlow {
+
+    0%,
+    100% {
+      filter:
+        drop-shadow(
+          0 0 5px
+          rgba(34, 211, 238, 0.08)
+        );
+    }
+
+    50% {
+      filter:
+        drop-shadow(
+          0 0 11px
+          rgba(34, 211, 238, 0.25)
+        );
+    }
+
+  }
+
+
+  /* =====================================================
+     SCAN BEAM
+  ===================================================== */
+
+  @keyframes scanBeam {
+
+    0% {
+      top: 12%;
+      opacity: 0;
+    }
+
+    12% {
+      opacity: 0.8;
+    }
+
+    50% {
+      opacity: 1;
+    }
+
+    88% {
+      opacity: 0.8;
+    }
+
+    100% {
+      top: 88%;
+      opacity: 0;
+    }
+
+  }
+
+
+  /* =====================================================
+     VEHICLE FLOAT
+  ===================================================== */
+
+  @keyframes vehicleFloat {
+
+    0%,
+    100% {
+      transform:
+        translate(-50%, -50%)
+        translateY(0);
+    }
+
+    50% {
+      transform:
+        translate(-50%, -50%)
+        translateY(-7px);
+    }
+
+  }
+
+
+  /* =====================================================
+     DETECTION BOX
+  ===================================================== */
+
+  @keyframes boxPulse {
+
+    0%,
+    100% {
+      opacity: 0.42;
+      transform: scale(0.985);
+    }
+
+    50% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+  }
+
+
+  /* =====================================================
+     AI BACKGROUND PARTICLES
+  ===================================================== */
+
+  .ai-star {
+    will-change:
+      opacity,
+      transform;
+  }
 
-        /*
-         * White glass-like text
-         *
-         * VEHICLE
-         */
+
+  @keyframes aiStarBlink {
+
+    0%,
+    100% {
+      opacity: 0.05;
+      transform: scale(0.7);
+    }
+
+    20% {
+      opacity: 0.12;
+      transform: scale(0.85);
+    }
 
-        .hero-glow-white {
-          position: relative;
+    45% {
+      opacity: 0.32;
+      transform: scale(1);
+    }
 
-          color: transparent;
+    55% {
+      opacity: 0.62;
+      transform: scale(1.3);
+    }
 
-          background:
-            linear-gradient(
-              110deg,
-              #ffffff 0%,
-              #dffcff 18%,
-              #ffffff 35%,
-              #a5f3fc 52%,
-              #ffffff 70%,
-              #dbeafe 86%,
-              #ffffff 100%
-            );
+    70% {
+      opacity: 0.16;
+      transform: scale(0.9);
+    }
 
-          background-size: 300% 100%;
+    85% {
+      opacity: 0.08;
+      transform: scale(0.75);
+    }
 
-          background-clip: text;
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+  }
 
-          animation:
-            headingGradient 7s ease-in-out infinite,
-            whiteTextGlow 3.8s ease-in-out infinite;
-        }
 
+  /* =====================================================
+     PIPELINE ANIMATIONS
+  ===================================================== */
 
-        /*
-         * Cyan / blue glass gradient
-         *
-         * INTELLIGENCE
-         * REDEFINED
-         */
+  @keyframes pipelineGradient {
 
-        .hero-glow-gradient {
-          position: relative;
+    0% {
+      background-position: 0% 50%;
+    }
 
-          color: transparent;
-
-          background:
-            linear-gradient(
-              110deg,
-              #67e8f9 0%,
-              #22d3ee 16%,
-              #38bdf8 32%,
-              #60a5fa 48%,
-              #a78bfa 60%,
-              #38bdf8 72%,
-              #22d3ee 86%,
-              #67e8f9 100%
-            );
+    50% {
+      background-position: 100% 50%;
+    }
 
-          background-size: 320% 100%;
+    100% {
+      background-position: 0% 50%;
+    }
 
-          background-clip: text;
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+  }
 
-          animation:
-            headingGradient 7s ease-in-out infinite,
-            cyanTextGlow 3.5s ease-in-out infinite;
-        }
 
+  @keyframes pipelineEnergy {
 
-        /*
-         * Slow moving gradient
-         */
+    0% {
+      transform: scaleX(0);
+      transform-origin: left;
+      opacity: 0;
+    }
 
-        @keyframes headingGradient {
+    15% {
+      opacity: 1;
+    }
 
-          0% {
-            background-position: 0% 50%;
-          }
+    50% {
+      transform: scaleX(1);
+      opacity: 1;
+    }
 
-          50% {
-            background-position: 100% 50%;
-          }
-
-          100% {
-            background-position: 0% 50%;
-          }
-
-        }
+    85% {
+      opacity: 1;
+    }
 
+    100% {
+      transform: scaleX(0);
+      transform-origin: right;
+      opacity: 0;
+    }
 
-        /*
-         * Whole heading breathing
-         */
+  }
 
-        @keyframes heroTitleBreathing {
 
-          0%,
-          100% {
-            transform: translateY(0);
-          }
+  @keyframes pipelineParticle {
 
-          50% {
-            transform: translateY(-1px);
-          }
+    0% {
+      left: 12.5%;
+      opacity: 0;
+    }
 
-        }
+    10% {
+      opacity: 1;
+    }
 
+    90% {
+      opacity: 1;
+    }
 
-        /*
-         * White glow
-         */
+    100% {
+      left: 87.5%;
+      opacity: 0;
+    }
 
-        @keyframes whiteTextGlow {
+  }
 
-          0%,
-          100% {
 
-            filter:
-              drop-shadow(
-                0 0 4px
-                rgba(255,255,255,0.08)
-              )
-              drop-shadow(
-                0 0 14px
-                rgba(34,211,238,0.06)
-              );
+  @keyframes pipelineSweep {
 
-          }
+    0% {
+      background-position: 200% 0;
+    }
 
-          50% {
+    100% {
+      background-position: -50% 0;
+    }
 
-            filter:
-              drop-shadow(
-                0 0 8px
-                rgba(255,255,255,0.22)
-              )
-              drop-shadow(
-                0 0 24px
-                rgba(34,211,238,0.16)
-              )
-              drop-shadow(
-                0 0 42px
-                rgba(59,130,246,0.08)
-              );
+  }
 
-          }
 
-        }
+  @keyframes pipelineDot {
 
+    0%,
+    100% {
+      opacity: 0.25;
+      transform: scale(0.8);
+    }
 
-        /*
-         * Cyan / blue glow
-         */
+    50% {
+      opacity: 1;
+      transform: scale(1.4);
+    }
 
-        @keyframes cyanTextGlow {
+  }
 
-          0%,
-          100% {
 
-            filter:
-              drop-shadow(
-                0 0 5px
-                rgba(34,211,238,0.16)
-              )
-              drop-shadow(
-                0 0 15px
-                rgba(59,130,246,0.08)
-              );
+  @keyframes pipelineWave {
 
-          }
+    from {
+      transform: scaleY(0.35);
+      opacity: 0.3;
+    }
 
-          50% {
+    to {
+      transform: scaleY(1);
+      opacity: 0.9;
+    }
 
-            filter:
-              drop-shadow(
-                0 0 9px
-                rgba(34,211,238,0.42)
-              )
-              drop-shadow(
-                0 0 25px
-                rgba(34,211,238,0.22)
-              )
-              drop-shadow(
-                0 0 45px
-                rgba(59,130,246,0.13)
-              );
+  }
 
-          }
 
-        }
+  /* =====================================================
+     ACCESSIBILITY
+  ===================================================== */
 
+  @media (prefers-reduced-motion: reduce) {
 
-        /* =====================================================
-           BRAND GLASS GRADIENT
-        ===================================================== */
+    .hero-glow-white,
+    .hero-glow-gradient,
+    .brand-glass-text,
+    .ai-star {
+      animation: none !important;
+    }
 
-        .brand-glass-text {
+    [style*="animation"] {
+      animation: none !important;
+    }
 
-          color: transparent;
+  }
 
-          background:
-            linear-gradient(
-              110deg,
-              #ffffff,
-              #67e8f9,
-              #60a5fa,
-              #a78bfa,
-              #ffffff,
-              #22d3ee,
-              #ffffff
-            );
 
-          background-size: 280% 100%;
+  /* =====================================================
+     MOBILE
+  ===================================================== */
 
-          background-clip: text;
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+  @media (max-width: 640px) {
 
-          animation:
-            brandGradient 5s linear infinite,
-            brandGlow 3s ease-in-out infinite;
+    .hero-title {
+      line-height: 0.95;
+    }
 
-        }
+  }
 
-
-        @keyframes brandGradient {
-
-          0% {
-            background-position: 200% 50%;
-          }
-
-          100% {
-            background-position: -20% 50%;
-          }
-
-        }
-
-
-        @keyframes brandGlow {
-
-          0%,
-          100% {
-
-            filter:
-              drop-shadow(
-                0 0 5px
-                rgba(34,211,238,0.10)
-              );
-
-          }
-
-          50% {
-
-            filter:
-              drop-shadow(
-                0 0 12px
-                rgba(34,211,238,0.30)
-              );
-
-          }
-
-        }
-
-
-        /* =====================================================
-           SCAN BEAM
-        ===================================================== */
-
-        @keyframes scanBeam {
-
-          0% {
-            top: 12%;
-            opacity: 0;
-          }
-
-          15% {
-            opacity: 1;
-          }
-
-          50% {
-            opacity: 1;
-          }
-
-          85% {
-            opacity: 1;
-          }
-
-          100% {
-            top: 88%;
-            opacity: 0;
-          }
-
-        }
-
-
-        /* =====================================================
-           VEHICLE FLOAT
-        ===================================================== */
-
-        @keyframes vehicleFloat {
-
-          0%,
-          100% {
-            transform:
-              translate(-50%, -50%)
-              translateY(0);
-          }
-
-          50% {
-            transform:
-              translate(-50%, -50%)
-              translateY(-7px);
-          }
-
-        }
-
-
-        /* =====================================================
-           DETECTION BOX
-        ===================================================== */
-
-        @keyframes boxPulse {
-
-          0%,
-          100% {
-            opacity: 0.45;
-            transform: scale(0.98);
-          }
-
-          50% {
-            opacity: 1;
-            transform: scale(1);
-          }
-
-        }
-
-
-        /* =====================================================
-           ACCESSIBILITY
-        ===================================================== */
-
-        @media (prefers-reduced-motion: reduce) {
-
-          .hero-title,
-          .hero-glow-white,
-          .hero-glow-gradient,
-          .brand-glass-text {
-            animation: none !important;
-          }
-
-        }
-
-
-        /* =====================================================
-           MOBILE
-        ===================================================== */
-
-        @media (max-width: 640px) {
-
-          .hero-title {
-            line-height: 0.95;
-          }
-
-        }
-
-      `}</style>
+`}</style>
 
     </div>
   );
